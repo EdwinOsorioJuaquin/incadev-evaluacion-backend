@@ -1,0 +1,635 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API de Auditorías UNS",
+        "description": "Documentación de los endpoints del sistema de auditorías académicas y administrativas (Auditorías → Hallazgos → Evidencias → Acciones → Reportes).",
+        "contact": {
+            "name": "Equipo de Desarrollo UNS",
+            "email": "soporte@uns.edu.pe"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://127.0.0.1:8000",
+            "description": "Servidor local de desarrollo"
+        }
+    ],
+    "paths": {
+        "/api/findings/{findingId}/actions": {
+            "post": {
+                "tags": [
+                    "Acciones Correctivas"
+                ],
+                "summary": "Registrar nueva acción correctiva",
+                "description": "Crea una nueva acción correctiva asociada a un hallazgo.",
+                "operationId": "0a7967cbf7f482e806aade7bfce72829",
+                "parameters": [
+                    {
+                        "name": "findingId",
+                        "in": "path",
+                        "description": "ID del hallazgo asociado",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "responsible_id",
+                                    "action_required",
+                                    "due_date"
+                                ],
+                                "properties": {
+                                    "responsible_id": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "action_required": {
+                                        "type": "string",
+                                        "example": "Implementar registro automatizado de auditorías."
+                                    },
+                                    "due_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-12-15"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Acción correctiva registrada correctamente"
+                    },
+                    "404": {
+                        "description": "Hallazgo no encontrado"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/actions/{id}/status": {
+            "put": {
+                "tags": [
+                    "Acciones Correctivas"
+                ],
+                "summary": "Actualizar estado de una acción correctiva",
+                "description": "Permite cambiar el estado de una acción correctiva (por ejemplo: de 'pending' a 'completed').",
+                "operationId": "677e3c7bd0e072037eed21b62543e636",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la acción correctiva",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "example": "completed"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estado actualizado correctamente"
+                    },
+                    "404": {
+                        "description": "Acción no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits": {
+            "get": {
+                "tags": [
+                    "Auditorías"
+                ],
+                "summary": "Listar auditorías del auditor autenticado",
+                "operationId": "4a45c9c00519541bdc1fe18c355d2630",
+                "responses": {
+                    "200": {
+                        "description": "Lista de auditorías recuperada correctamente."
+                    },
+                    "401": {
+                        "description": "No autenticado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Auditorías"
+                ],
+                "summary": "Registrar nueva auditoría",
+                "operationId": "479d6fbd38e2871c9bc7592dcdfceb54",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "audit_date",
+                                    "summary",
+                                    "auditable_type",
+                                    "auditable_id"
+                                ],
+                                "properties": {
+                                    "audit_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2025-11-10"
+                                    },
+                                    "summary": {
+                                        "type": "string",
+                                        "example": "Evaluación general del proceso académico."
+                                    },
+                                    "auditable_type": {
+                                        "type": "string",
+                                        "example": "Departamento"
+                                    },
+                                    "auditable_id": {
+                                        "type": "integer",
+                                        "example": 12
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Auditoría creada correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits/{id}": {
+            "get": {
+                "tags": [
+                    "Auditorías"
+                ],
+                "summary": "Ver detalles de una auditoría",
+                "operationId": "01f3bc1eaa7a753f78a999186f8861dc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la auditoría",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalles de auditoría obtenidos correctamente."
+                    },
+                    "404": {
+                        "description": "Auditoría no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits/{id}/recommendation": {
+            "put": {
+                "tags": [
+                    "Auditorías"
+                ],
+                "summary": "Actualizar recomendaciones finales de la auditoría",
+                "operationId": "cbe10755a8125eb786187e4467df3e07",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la auditoría a actualizar",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "recommendation"
+                                ],
+                                "properties": {
+                                    "recommendation": {
+                                        "type": "string",
+                                        "example": "Se recomienda optimizar los procesos administrativos de registro académico."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Recomendaciones actualizadas correctamente."
+                    },
+                    "404": {
+                        "description": "Auditoría no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits/{auditId}/findings": {
+            "get": {
+                "tags": [
+                    "Hallazgos de Auditoría"
+                ],
+                "summary": "Listar hallazgos de una auditoría",
+                "description": "Obtiene todos los hallazgos (con sus evidencias y acciones correctivas) asociados a una auditoría específica.",
+                "operationId": "8e35f53033a77c090322c663e274d4bc",
+                "parameters": [
+                    {
+                        "name": "auditId",
+                        "in": "path",
+                        "description": "ID de la auditoría",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de hallazgos obtenida correctamente."
+                    },
+                    "404": {
+                        "description": "Auditoría no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Hallazgos de Auditoría"
+                ],
+                "summary": "Registrar un nuevo hallazgo",
+                "description": "Crea un hallazgo asociado a una auditoría, indicando su descripción y severidad.",
+                "operationId": "3632edeb46543f3f61c8549be212157b",
+                "parameters": [
+                    {
+                        "name": "auditId",
+                        "in": "path",
+                        "description": "ID de la auditoría asociada",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "description",
+                                    "severity"
+                                ],
+                                "properties": {
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Falta de respaldo en los servidores de registro académico."
+                                    },
+                                    "severity": {
+                                        "type": "string",
+                                        "example": "Alta"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Hallazgo registrado correctamente."
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/findings/{id}/status": {
+            "put": {
+                "tags": [
+                    "Hallazgos de Auditoría"
+                ],
+                "summary": "Actualizar estado de un hallazgo",
+                "description": "Permite cambiar el estado de un hallazgo (por ejemplo: de 'open' a 'closed').",
+                "operationId": "59fa5c8ae31cf4ee15bdb4421e894f02",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del hallazgo",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "example": "Closed"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Estado del hallazgo actualizado correctamente."
+                    },
+                    "404": {
+                        "description": "Hallazgo no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/findings/{id}/evidences": {
+            "post": {
+                "tags": [
+                    "Evidencias de Hallazgos"
+                ],
+                "summary": "Subir evidencia para un hallazgo",
+                "description": "Permite registrar una evidencia (documento, imagen, video, audio) asociada a un hallazgo.",
+                "operationId": "5b9c7f72fbad3a8e6aaeaf9a05e5832c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID del hallazgo asociado",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "Archivo de evidencia (PDF, imagen, audio o video)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Evidencia registrada correctamente."
+                    },
+                    "404": {
+                        "description": "Hallazgo no encontrado"
+                    },
+                    "422": {
+                        "description": "Error de validación"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits/{id}/report": {
+            "post": {
+                "tags": [
+                    "Reportes de Auditoría"
+                ],
+                "summary": "Generar reporte PDF de una auditoría",
+                "description": "Genera un reporte PDF institucional con los hallazgos, evidencias y acciones correctivas asociadas a una auditoría.",
+                "operationId": "deb95ac50b9af69c60ce4acb0add0b6c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la auditoría",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte generado correctamente."
+                    },
+                    "404": {
+                        "description": "Auditoría no encontrada"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits/{id}/report/preview": {
+            "get": {
+                "tags": [
+                    "Reportes de Auditoría"
+                ],
+                "summary": "Previsualizar reporte PDF",
+                "description": "Muestra el archivo PDF del reporte directamente en el navegador.",
+                "operationId": "d65d44023cef85cc43af653134a1d019",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la auditoría",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Vista previa del reporte PDF."
+                    },
+                    "404": {
+                        "description": "Reporte no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/audits/{id}/report/download": {
+            "get": {
+                "tags": [
+                    "Reportes de Auditoría"
+                ],
+                "summary": "Descargar reporte PDF",
+                "description": "Descarga el reporte PDF de la auditoría con su información consolidada.",
+                "operationId": "e8d2937adb93ba8bc21902b4dd243f66",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID de la auditoría",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte descargado correctamente."
+                    },
+                    "404": {
+                        "description": "Reporte no encontrado"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Acciones Correctivas",
+            "description": "Gestión de acciones correctivas asociadas a hallazgos de auditoría."
+        },
+        {
+            "name": "Auditorías",
+            "description": "Gestión principal de auditorías internas y académicas."
+        },
+        {
+            "name": "Hallazgos de Auditoría",
+            "description": "Gestión de hallazgos detectados en las auditorías."
+        },
+        {
+            "name": "Evidencias de Hallazgos",
+            "description": "Gestión de archivos (documentos, imágenes, videos) como evidencias asociadas a hallazgos."
+        },
+        {
+            "name": "Reportes de Auditoría",
+            "description": "Generación, previsualización y descarga de reportes en PDF de auditorías."
+        }
+    ]
+}

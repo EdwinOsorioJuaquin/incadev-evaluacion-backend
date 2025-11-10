@@ -7,10 +7,26 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use IncadevUns\CoreDomain\Models\Audit;
 
+/**
+ * @OA\Tag(
+ *     name="Auditorías",
+ *     description="Gestión principal de auditorías internas y académicas."
+ * )
+ */
 class AuditController extends Controller
 {
     /**
-     * Listar auditorías del auditor autenticado.
+     * @OA\Get(
+     *     path="/api/audits",
+     *     summary="Listar auditorías del auditor autenticado",
+     *     tags={"Auditorías"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lista de auditorías recuperada correctamente."
+     *     ),
+     *     @OA\Response(response=401, description="No autenticado")
+     * )
      */
     public function index()
     {
@@ -22,7 +38,27 @@ class AuditController extends Controller
     }
 
     /**
-     * Crear una nueva auditoría.
+     * @OA\Post(
+     *     path="/api/audits",
+     *     summary="Registrar nueva auditoría",
+     *     tags={"Auditorías"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"audit_date","summary","auditable_type","auditable_id"},
+     *             @OA\Property(property="audit_date", type="string", format="date", example="2025-11-10"),
+     *             @OA\Property(property="summary", type="string", example="Evaluación general del proceso académico."),
+     *             @OA\Property(property="auditable_type", type="string", example="Departamento"),
+     *             @OA\Property(property="auditable_id", type="integer", example=12)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Auditoría creada correctamente."
+     *     ),
+     *     @OA\Response(response=422, description="Error de validación")
+     * )
      */
     public function store(Request $request)
     {
@@ -49,7 +85,24 @@ class AuditController extends Controller
     }
 
     /**
-     * Ver detalles completos de una auditoría.
+     * @OA\Get(
+     *     path="/api/audits/{id}",
+     *     summary="Ver detalles de una auditoría",
+     *     tags={"Auditorías"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID de la auditoría",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Detalles de auditoría obtenidos correctamente."
+     *     ),
+     *     @OA\Response(response=404, description="Auditoría no encontrada")
+     * )
      */
     public function show($id)
     {
@@ -58,7 +111,31 @@ class AuditController extends Controller
     }
 
     /**
-     * Actualizar recomendaciones finales.
+     * @OA\Put(
+     *     path="/api/audits/{id}/recommendation",
+     *     summary="Actualizar recomendaciones finales de la auditoría",
+     *     tags={"Auditorías"},
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID de la auditoría a actualizar",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"recommendation"},
+     *             @OA\Property(property="recommendation", type="string", example="Se recomienda optimizar los procesos administrativos de registro académico.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Recomendaciones actualizadas correctamente."
+     *     ),
+     *     @OA\Response(response=404, description="Auditoría no encontrada")
+     * )
      */
     public function updateRecommendation(Request $request, $id)
     {

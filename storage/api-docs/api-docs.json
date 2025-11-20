@@ -1,18 +1,18 @@
 {
     "openapi": "3.0.0",
     "info": {
-        "title": "API de Auditorías UNS",
+        "title": "API de Auditorías INCADEV",
         "description": "Documentación de los endpoints del sistema de auditorías académicas y administrativas (Auditorías → Hallazgos → Evidencias → Acciones → Reportes).",
         "contact": {
-            "name": "Equipo de Desarrollo UNS",
-            "email": "soporte@uns.edu.pe"
+            "name": "Grupo 6 - EVALUACION Y MEJORA CONTINUA - INCADEV",
+            "email": "evaluacion@incadev.com.pe"
         },
         "version": "1.0.0"
     },
     "servers": [
         {
-            "url": "http://127.0.0.1:8000",
-            "description": "Servidor local de desarrollo"
+            "url": "http://https://instituto.cetivirgendelapuerta.com/backend/evaluacion/public/",
+            "description": "Servidor de  produccion"
         }
     ],
     "paths": {

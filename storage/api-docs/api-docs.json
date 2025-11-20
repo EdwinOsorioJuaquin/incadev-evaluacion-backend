@@ -11,7 +11,7 @@
     },
     "servers": [
         {
-            "url": "http://https://instituto.cetivirgendelapuerta.com/backend/evaluacion/public/",
+            "url": "https://instituto.cetivirgendelapuerta.com/backend/evaluacion/public/",
             "description": "Servidor de  produccion"
         }
     ],

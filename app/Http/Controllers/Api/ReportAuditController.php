@@ -14,7 +14,7 @@ use IncadevUns\CoreDomain\Models\Audit;
  *     description="Generación, previsualización y descarga de reportes en PDF de auditorías."
  * )
  */
-class ReportController extends Controller
+class ReportAuditController extends Controller
 {
     /**
      * @OA\Post(

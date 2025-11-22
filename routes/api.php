@@ -9,7 +9,7 @@ use App\Http\Controllers\Api\{
     AuditFindingController,
     FindingEvidenceController,
     AuditActionController,
-    ReportController
+    ReportAuditController
 };
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -32,9 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/actions/{id}/status', [AuditActionController::class, 'updateStatus']);
 
     // Reporte PDF
-    Route::post('/audits/{id}/report/generate', [ReportController::class, 'generate']);
-    Route::get('/audits/{id}/report/preview', [ReportController::class, 'preview']);
-    Route::get('/audits/{id}/report/download', [ReportController::class, 'download']);
+    Route::post('/audits/{id}/report/generate', [ReportAuditController::class, 'generate']);
+    Route::get('/audits/{id}/report/preview', [ReportAuditController::class, 'preview']);
+    Route::get('/audits/{id}/report/download', [ReportAuditController::class, 'download']);
 });
 // SATISFACCION
 // 🔹 Ruta de prueba para verificar API
@@ -70,7 +70,7 @@ Route::get('/responses/count', function() {
 
 //  Consultar todas las respuestas (opcional)
 Route::get('/responses', [ResponseController::class, 'index']);
-// Route::get('/responses/{id}', [ResponseController::class, 'showResponse']); 
+// Route::get('/responses/{id}', [ResponseController::class, 'showResponse']);
 
 
 //  Reportes / estadísticas

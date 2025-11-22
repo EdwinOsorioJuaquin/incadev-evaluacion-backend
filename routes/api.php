@@ -44,8 +44,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/{id}', [SurveyController::class, 'show']);
         Route::put('/{id}', [SurveyController::class, 'update']);
         Route::delete('/{id}', [SurveyController::class, 'destroy']);
-        Route::get('/{id}/analysis', [SurveyController::class, 'analysis']);
     });
+
+    Route::get('/surveys/{survey}/questions', [QuestionController::class, 'index']);
+    Route::post('/surveys/{survey}/questions', [QuestionController::class, 'store']);
+
+    Route::get('/questions/{id}', [QuestionController::class, 'show']);
+    Route::put('/questions/{id}', [QuestionController::class, 'update']);
+    Route::delete('/questions/{id}', [QuestionController::class, 'destroy']);
 });
 // SATISFACCION
 // 🔹 Ruta de prueba para verificar API
@@ -85,13 +91,5 @@ Route::get('/reports/survey/{id}', [ReportController::class, 'generate']);
 Route::get('/reports/survey/{id}/pdf', [ReportController::class, 'downloadPdf']);
 Route::get('/reports/survey/{id}/excel', [ReportController::class, 'downloadExcel']);
 Route::get('/surveys/{id}/analysis', [SurveyController::class, 'analysis']);
-
-// 🧩 Preguntas (QuestionController)
-Route::get('/surveys/{surveyId}/questions', [QuestionController::class, 'index'])
-    ->name('api.surveys.questions.index');
-Route::post('/surveys/{surveyId}/questions', [QuestionController::class, 'storeQuestions'])
-    ->name('api.surveys.questions.store');
-Route::delete('/questions/{id}', [QuestionController::class, 'destroy'])
-    ->name('api.questions.destroy');
 
 

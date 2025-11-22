@@ -35,6 +35,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/audits/{id}/report/generate', [ReportAuditController::class, 'generate']);
     Route::get('/audits/{id}/report/preview', [ReportAuditController::class, 'preview']);
     Route::get('/audits/{id}/report/download', [ReportAuditController::class, 'download']);
+
+    // Encuestas
+    Route::prefix('surveys')->group(function () {
+        Route::get('/', [SurveyController::class, 'index']);
+        Route::post('/', [SurveyController::class, 'store']);
+        Route::get('/active', [SurveyController::class, 'active']);
+        Route::get('/{id}', [SurveyController::class, 'show']);
+        Route::put('/{id}', [SurveyController::class, 'update']);
+        Route::delete('/{id}', [SurveyController::class, 'destroy']);
+        Route::get('/{id}/analysis', [SurveyController::class, 'analysis']);
+    });
 });
 // SATISFACCION
 // 🔹 Ruta de prueba para verificar API
@@ -43,12 +54,7 @@ Route::get('/test', function () {
 });
 
 // 🧠 CRUD de encuestas
-Route::get('/surveys', [SurveyController::class, 'index']);
-Route::get('/surveys/{id}', [SurveyController::class, 'show']);
-Route::post('/surveys', [SurveyController::class, 'store']);
-Route::put('/surveys/{id}', [SurveyController::class, 'update']);
-Route::delete('/surveys/{id}', [SurveyController::class, 'destroy']);
-Route::get('/student/surveys', [SurveyController::class, 'active']);
+
 
 //  Obtener encuesta con preguntas (para el frontend)
 //Route::get('/surveys/{id}/questions', [ResponseController::class, 'show']);

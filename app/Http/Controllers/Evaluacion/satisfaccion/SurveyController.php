@@ -12,48 +12,88 @@ use Illuminate\Support\Facades\DB;
 
 class SurveyController extends Controller
 {
-    public function index()
+    private function ensureSurveyAdmin(Request $request)
     {
-        $surveys = Survey::with('questions')->latest()->get();
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+            ], 401);
+        }
+
+        if (!$user->hasRole('survey_admin')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para gestionar encuestas.',
+            ], 403);
+        }
+
+        return null; // Todo ok
+    }
+
+    public function index(Request $request)
+    {
+        if ($resp = $this->ensureSurveyAdmin($request)) {
+            return $resp;
+        }
+
+        $perPage = (int) $request->get('per_page', 10);
+
+        $surveys = Survey::with('questions')
+            ->latest()
+            ->paginate($perPage);
+
         return response()->json([
             'success' => true,
-            'data' => $surveys
+            'data' => $surveys->items(),
+            'meta' => [
+                'current_page' => $surveys->currentPage(),
+                'from'         => $surveys->firstItem(),
+                'to'           => $surveys->lastItem(),
+                'per_page'     => $surveys->perPage(),
+                'total'        => $surveys->total(),
+                'last_page'    => $surveys->lastPage(),
+            ],
+            'links' => [
+                'first' => $surveys->url(1),
+                'last'  => $surveys->url($surveys->lastPage()),
+                'prev'  => $surveys->previousPageUrl(),
+                'next'  => $surveys->nextPageUrl(),
+            ],
         ]);
     }
 
     public function store(Request $request)
     {
+        if ($resp = $this->ensureSurveyAdmin($request)) {
+            return $resp;
+        }
+
         $request->validate([
             'title' => 'required|string',
             'description' => 'nullable|string',
-            'questions' => 'required|array|min:1',
-            'questions.*' => 'required|string',
         ]);
 
         DB::beginTransaction();
+
         try {
             $survey = Survey::create([
                 'title' => $request->title,
                 'description' => $request->description,
             ]);
 
-            foreach ($request->questions as $index => $q) {
-                Question::create([
-                    'survey_id' => $survey->id,
-                    'question' => $q,
-                    'order' => $index + 1,
-                ]);
-            }
-
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $survey->load('questions')
+                'data' => $survey->load('questions'),
             ], 201);
 
         } catch (\Throwable $th) {
             DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al crear la encuesta',
@@ -62,9 +102,14 @@ class SurveyController extends Controller
         }
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
+        if ($resp = $this->ensureSurveyAdmin($request)) {
+            return $resp;
+        }
+
         $survey = Survey::with('questions')->findOrFail($id);
+
         return response()->json([
             'success' => true,
             'data' => $survey
@@ -73,13 +118,15 @@ class SurveyController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ($resp = $this->ensureSurveyAdmin($request)) {
+            return $resp;
+        }
+
         $survey = Survey::findOrFail($id);
 
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'questions' => 'required|array|min:1',
-            'questions.*' => 'required|string',
         ]);
 
         DB::beginTransaction();
@@ -88,16 +135,6 @@ class SurveyController extends Controller
                 'title' => $request->title,
                 'description' => $request->description,
             ]);
-
-            $survey->questions()->delete();
-
-            foreach ($request->questions as $index => $q) {
-                Question::create([
-                    'survey_id' => $survey->id,
-                    'question' => $q,
-                    'order' => $index + 1,
-                ]);
-            }
 
             DB::commit();
 
@@ -117,143 +154,140 @@ class SurveyController extends Controller
         }
     }
 
-    public function destroy($id)
-{
-    DB::transaction(function () use ($id) {
-        $survey = Survey::findOrFail($id);
-
-        // Traer respuestas de la tabla survey_responses
-        $responses = Response::where('survey_id', $survey->id)->get();
-
-        // Borrar detalles de cada respuesta
-        foreach ($responses as $response) {
-            $response->details()->delete();
+    public function destroy(Request $request, $id)
+    {
+        if ($resp = $this->ensureSurveyAdmin($request)) {
+            return $resp;
         }
 
-        // Borrar las respuestas
-        $survey->responses()->delete();
+        DB::transaction(function () use ($id) {
+            $survey = Survey::findOrFail($id);
 
-        // Borrar preguntas
-        $survey->questions()->delete();
+            $responses = Response::where('survey_id', $survey->id)->get();
 
-        // Borrar la encuesta
-        $survey->delete();
-    });
+            foreach ($responses as $response) {
+                $response->details()->delete();
+            }
 
-    return response()->json([
-        'success' => true,
-        'message' => 'Encuesta eliminada correctamente.'
-    ]);
-}
-// app/Http/Controllers/SurveyController.php
-public function active()
-{
-    $surveys = Survey::where('is_active', true)
-        ->withCount('responses')
-        ->get(['id', 'title', 'description', 'created_at']);
-
-    return response()->json([
-        'data' => $surveys
-    ]);
-}
-// app/Http/Controllers/SurveyController.php
-public function analysis($id)
-{
-    try {
-        // Encuesta base
-        $survey = Survey::with('questions')->findOrFail($id);
-
-        // Obtener promedios por pregunta
-        $query = DB::table('response_details')
-            ->join('survey_responses', 'response_details.survey_response_id', '=', 'survey_responses.id')
-            ->join('survey_questions', 'response_details.survey_question_id', '=', 'survey_questions.id')
-            ->where('survey_responses.survey_id', $id)
-            ->select(
-                'survey_questions.id as question_id',
-                'survey_questions.question as question_text',
-                DB::raw('AVG(response_details.score) as avg_score')
-            )
-            ->groupBy('survey_questions.id', 'survey_questions.question')
-            ->get();
-
-        $totalResponses = DB::table('survey_responses')
-            ->where('survey_id', $id)
-            ->count();
-
-        $totalQuestions = $query->count();
-        $avgGeneral = $totalQuestions > 0 ? $query->avg('avg_score') : 0;
-
-        // Preguntas con menor puntaje
-        $lowestQuestions = $query
-            ->sortBy('avg_score')
-            ->take(3)
-            ->map(fn($q) => "{$q->question_text} (Promedio: " . round($q->avg_score, 2) . ")")
-            ->values()
-            ->toArray();
-
-        $recommendation = $this->generateSmartRecommendation($avgGeneral, $lowestQuestions);
+            $survey->responses()->delete();
+            $survey->questions()->delete();
+            $survey->delete();
+        });
 
         return response()->json([
-            'survey' => [
-                'id' => $survey->id,
-                'title' => $survey->title,
-                'description' => $survey->description,
-            ],
-            'kpis' => [
-                ['label' => 'Total de Respuestas', 'value' => $totalResponses],
-                ['label' => 'Promedio General', 'value' => round($avgGeneral, 2)],
-                ['label' => 'Preguntas Totales', 'value' => $totalQuestions],
-            ],
-            'chartData' => $query->map(fn($item) => [
-                'label' => $item->question_text,
-                'value' => round($item->avg_score, 2),
-            ]),
-            'recommendation' => $recommendation,
+            'success' => true,
+            'message' => 'Encuesta eliminada correctamente.'
         ]);
+    }
 
-    } catch (\Exception $e) {
+    public function active(Request $request)
+    {
+        if ($resp = $this->ensureSurveyAdmin($request)) {
+            return $resp;
+        }
+
+        $surveys = Survey::where('is_active', true)
+            ->withCount('responses')
+            ->get(['id', 'title', 'description', 'created_at']);
+
         return response()->json([
-            'error' => 'Error al generar el análisis',
-            'message' => $e->getMessage(),
-        ], 500);
-    }
-}
-
-
-private function generateSmartRecommendation($avg, $lowestQuestions)
-{
-    $intro = '';
-    $suggestion = '';
-
-    if ($avg >= 4.5) {
-        $intro = 'Excelente desempeño general:';
-        $suggestion = 'Mantén las estrategias actuales, refuerza las buenas prácticas y comparte los resultados positivos con el equipo.';
-    } elseif ($avg >= 3.5) {
-        $intro = 'Buen nivel de satisfacción:';
-        $suggestion = 'Ajusta pequeños detalles en los aspectos menos valorados para alcanzar un nivel de excelencia.';
-    } elseif ($avg >= 2.5) {
-        $intro = 'Nivel intermedio detectado:';
-        $suggestion = 'Se recomienda enfocarse en las áreas más débiles y diseñar un plan de mejora específico.';
-    } else {
-        $intro = 'Nivel bajo de satisfacción:';
-        $suggestion = 'Urge una revisión integral de los procesos y una retroalimentación directa con los participantes.';
+            'success' => true,
+            'data' => $surveys
+        ]);
     }
 
-    // ✅ Formato claro con saltos de línea y viñetas
-    $formatted = "{$intro}\n{$suggestion}";
+    public function analysis($id)
+    {
+        try {
+            // Encuesta base
+            $survey = Survey::with('questions')->findOrFail($id);
 
-    if (!empty($lowestQuestions)) {
-        $formatted .= "\nPreguntas con menor puntaje:";
-        foreach ($lowestQuestions as $q) {
-            $formatted .= "\n- {$q}";
+            // Obtener promedios por pregunta
+            $query = DB::table('response_details')
+                ->join('survey_responses', 'response_details.survey_response_id', '=', 'survey_responses.id')
+                ->join('survey_questions', 'response_details.survey_question_id', '=', 'survey_questions.id')
+                ->where('survey_responses.survey_id', $id)
+                ->select(
+                    'survey_questions.id as question_id',
+                    'survey_questions.question as question_text',
+                    DB::raw('AVG(response_details.score) as avg_score')
+                )
+                ->groupBy('survey_questions.id', 'survey_questions.question')
+                ->get();
+
+            $totalResponses = DB::table('survey_responses')
+                ->where('survey_id', $id)
+                ->count();
+
+            $totalQuestions = $query->count();
+            $avgGeneral = $totalQuestions > 0 ? $query->avg('avg_score') : 0;
+
+            // Preguntas con menor puntaje
+            $lowestQuestions = $query
+                ->sortBy('avg_score')
+                ->take(3)
+                ->map(fn($q) => "{$q->question_text} (Promedio: " . round($q->avg_score, 2) . ")")
+                ->values()
+                ->toArray();
+
+            $recommendation = $this->generateSmartRecommendation($avgGeneral, $lowestQuestions);
+
+            return response()->json([
+                'survey' => [
+                    'id' => $survey->id,
+                    'title' => $survey->title,
+                    'description' => $survey->description,
+                ],
+                'kpis' => [
+                    ['label' => 'Total de Respuestas', 'value' => $totalResponses],
+                    ['label' => 'Promedio General', 'value' => round($avgGeneral, 2)],
+                    ['label' => 'Preguntas Totales', 'value' => $totalQuestions],
+                ],
+                'chartData' => $query->map(fn($item) => [
+                    'label' => $item->question_text,
+                    'value' => round($item->avg_score, 2),
+                ]),
+                'recommendation' => $recommendation,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al generar el análisis',
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 
-    return $formatted;
-}
 
+    private function generateSmartRecommendation($avg, $lowestQuestions)
+    {
+        $intro = '';
+        $suggestion = '';
 
+        if ($avg >= 4.5) {
+            $intro = 'Excelente desempeño general:';
+            $suggestion = 'Mantén las estrategias actuales, refuerza las buenas prácticas y comparte los resultados positivos con el equipo.';
+        } elseif ($avg >= 3.5) {
+            $intro = 'Buen nivel de satisfacción:';
+            $suggestion = 'Ajusta pequeños detalles en los aspectos menos valorados para alcanzar un nivel de excelencia.';
+        } elseif ($avg >= 2.5) {
+            $intro = 'Nivel intermedio detectado:';
+            $suggestion = 'Se recomienda enfocarse en las áreas más débiles y diseñar un plan de mejora específico.';
+        } else {
+            $intro = 'Nivel bajo de satisfacción:';
+            $suggestion = 'Urge una revisión integral de los procesos y una retroalimentación directa con los participantes.';
+        }
 
+        // ✅ Formato claro con saltos de línea y viñetas
+        $formatted = "{$intro}\n{$suggestion}";
 
+        if (!empty($lowestQuestions)) {
+            $formatted .= "\nPreguntas con menor puntaje:";
+            foreach ($lowestQuestions as $q) {
+                $formatted .= "\n- {$q}";
+            }
+        }
 
+        return $formatted;
+    }
 }

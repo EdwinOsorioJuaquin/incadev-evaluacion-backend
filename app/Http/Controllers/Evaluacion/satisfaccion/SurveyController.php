@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use App\Models\Evaluacion\Satisfaccion\Survey;
 use App\Models\Evaluacion\Satisfaccion\Response;
 use Illuminate\Support\Facades\DB;
-use App\Models\Evaluacion\Satisfaccion\SurveyMapping;
 use Illuminate\Support\Carbon;
 use IncadevUns\CoreDomain\Models\Group;
 use IncadevUns\CoreDomain\Enums\GroupStatus;

@@ -212,12 +212,14 @@ class SurveyController extends Controller
         }
 
         $request->validate([
-            'event'    => 'required|string|in:satisfaction,teacher,impact',
-            'group_id' => 'required|integer|exists:groups,id',
+            'event'     => 'required|string|in:satisfaction,teacher,impact',
+            'group_id'  => 'required|integer|exists:groups,id',
+            'survey_id' => 'required|integer|exists:surveys,id',
         ]);
 
-        $event   = $request->input('event');
-        $groupId = $request->input('group_id');
+        $event    = $request->input('event');
+        $groupId  = $request->input('group_id');
+        $surveyId = $request->input('survey_id');
 
         // Roles permitidos según el tipo de encuesta
         $allowedRoles = match ($event) {
@@ -234,9 +236,10 @@ class SurveyController extends Controller
             ], 403);
         }
 
-        // ¿Ha respondido alguna survey de este evento para ESTE grupo?
+        // ¿Ha respondido ESTA survey (survey_id) de ESTE evento para ESTE grupo?
         $hasResponded = Response::where('user_id', $user->id)
             ->where('rateable_id', $groupId)
+            ->where('survey_id', $surveyId)
             ->whereHas('survey.mapping', function ($q) use ($event) {
                 $q->where('event', $event);
             })
@@ -247,6 +250,7 @@ class SurveyController extends Controller
             'data' => [
                 'event'        => $event,
                 'group_id'     => $groupId,
+                'survey_id'    => $surveyId,
                 'hasResponded' => $hasResponded,
             ],
         ]);

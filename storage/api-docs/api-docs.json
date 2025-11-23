@@ -11,8 +11,8 @@
     },
     "servers": [
         {
-            "url": "https://instituto.cetivirgendelapuerta.com/backend/evaluacion/public/",
-            "description": "Servidor de  produccion"
+            "url": "http://127.0.0.1:8000",
+            "description": "Servidor local de desarrollo"
         }
     ],
     "paths": {

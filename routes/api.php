@@ -18,7 +18,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/audits', [AuditController::class, 'store']);
     Route::get('/audits/{id}', [AuditController::class, 'show']);
     Route::put('/audits/{id}/recommendation', [AuditController::class, 'updateRecommendation']);
-
+    Route::get('/audits/dashboard', [AuditController::class, 'dashboard']);
+    Route::put('/audits/{id}', [AuditController::class, 'update']);
+    Route::put('/audits/{id}/start', [AuditController::class, 'startAudit']);
     // Hallazgos
     Route::get('/audits/{id}/findings', [AuditFindingController::class, 'index']);
     Route::post('/audits/{id}/findings', [AuditFindingController::class, 'store']);

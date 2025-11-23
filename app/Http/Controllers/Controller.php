@@ -15,8 +15,8 @@ namespace App\Http\Controllers;
  * )
  *
  * @OA\Server(
- *     url=L5_SWAGGER_CONST_HOST,
- *     description="Servidor produccion"
+ *     url=http://127.0.0.1:8000,
+ *     description="Servidor local de desarrollo"
  * )
  *
  * @OA\SecurityScheme(

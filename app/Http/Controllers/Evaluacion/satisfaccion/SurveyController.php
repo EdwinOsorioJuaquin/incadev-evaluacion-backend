@@ -297,7 +297,7 @@ class SurveyController extends Controller
         $allowedEvents = [];
 
         if ($user->hasRole('student')) {
-            $allowedEvents = array_merge($allowedEvents, ['impact', 'satisfaction']);
+            $allowedEvents = array_merge($allowedEvents, ['impact', 'satisfaction', 'teacher']);
         }
 
         if ($user->hasRole('teacher')) {

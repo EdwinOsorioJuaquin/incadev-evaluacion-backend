@@ -41,7 +41,7 @@ class ResponseController extends Controller
         $allowedRoles = match ($event) {
             'impact'       => ['student'],
             'satisfaction' => ['student'],
-            'teacher'      => ['teacher'],
+            'teacher'      => ['teacher', 'student'],
             default        => [],
         };
 

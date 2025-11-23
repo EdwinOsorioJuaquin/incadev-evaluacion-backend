@@ -66,6 +66,86 @@ class SurveyController extends Controller
         ]);
     }
 
+    public function isSurveyCompleted(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+            ], 401);
+        }
+
+        $request->validate([
+            'group_id' => 'required|integer|exists:groups,id',
+        ]);
+
+        $groupId = $request->input('group_id');
+
+        // 1. Encuestas requeridas: solo satisfaction y teacher
+        $requiredSurveys = Survey::with('mapping')
+            ->whereHas('mapping', function ($q) {
+                $q->whereIn('event', ['satisfaction', 'teacher']);
+            })
+            ->get();
+
+        // Si no hay ninguna encuesta de esos tipos, no hay nada que exigir
+        if ($requiredSurveys->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'group_id'        => $groupId,
+                    'isCompleted'     => true,
+                    'requiredSurveys' => [],
+                    'pendingSurveys'  => [],
+                ],
+            ]);
+        }
+
+        $requiredSurveyIds = $requiredSurveys->pluck('id');
+
+        // 2. Respuestas del usuario para ESTE grupo y estas surveys
+        $answeredSurveyIds = Response::where('user_id', $user->id)
+            ->where('rateable_id', $groupId)
+            ->whereIn('survey_id', $requiredSurveyIds)
+            ->pluck('survey_id')
+            ->unique();
+
+        // 3. Verificar si respondió TODAS las surveys requeridas
+        $isCompleted = $answeredSurveyIds->count() === $requiredSurveyIds->count();
+
+        // 4. Armar listado de encuestas pendientes (si quieres mostrar en frontend)
+        $pendingSurveys = $requiredSurveys
+            ->whereNotIn('id', $answeredSurveyIds)
+            ->values()
+            ->map(function ($survey) {
+                return [
+                    'id'    => $survey->id,
+                    'title' => $survey->title,
+                    'event' => $survey->mapping?->event,
+                ];
+            });
+
+        $requiredSurveysInfo = $requiredSurveys->map(function ($survey) {
+            return [
+                'id'    => $survey->id,
+                'title' => $survey->title,
+                'event' => $survey->mapping?->event,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'group_id'        => $groupId,
+                'isCompleted'     => $isCompleted,
+                'requiredSurveys' => $requiredSurveysInfo,
+                'pendingSurveys'  => $pendingSurveys,
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         if ($resp = $this->ensureSurveyAdmin($request)) {

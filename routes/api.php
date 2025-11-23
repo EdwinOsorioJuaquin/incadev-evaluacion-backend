@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [SurveyController::class, 'store']);
         Route::get('/active', [SurveyController::class, 'active']);
         Route::get('/by-role', [SurveyController::class, 'byRole']);
+        Route::get('/completed', [SurveyController::class, 'isSurveyCompleted']);
         Route::get('/{id}', [SurveyController::class, 'show']);
         Route::put('/{id}', [SurveyController::class, 'update']);
         Route::delete('/{id}', [SurveyController::class, 'destroy']);

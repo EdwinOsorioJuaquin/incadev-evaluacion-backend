@@ -84,15 +84,13 @@ class ResponseController extends Controller
             ->where('status', GroupStatus::Completed)
             ->firstOrFail();
 
-        $rateableType = $survey->mapping?->event;
-
         DB::beginTransaction();
         try {
             $response = Response::create([
                 'survey_id'     => $survey->id,
                 'user_id'       => $user->id,
                 'rateable_id'   => $request->rateable_id,
-                'rateable_type' => $rateableType,
+                'rateable_type' => Group::class,
                 'date'  => now(),
             ]);
 

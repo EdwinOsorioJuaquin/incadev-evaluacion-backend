@@ -6,7 +6,10 @@ use Illuminate\Http\Request;
 use App\Models\Evaluacion\Satisfaccion\Survey;
 use App\Models\Evaluacion\Satisfaccion\Response;
 use App\Models\Evaluacion\Satisfaccion\ResponseDetail;
-use App\Models\Evaluacion\Satisfaccion\Question; // Asegúrate de importar tu modelo de preguntas
+use App\Models\Evaluacion\Satisfaccion\Question;
+use IncadevUns\CoreDomain\Models\Group;
+use IncadevUns\CoreDomain\Enums\GroupStatus;
+
 use Illuminate\Support\Facades\DB;
 
 class ResponseController extends Controller
@@ -62,10 +65,8 @@ class ResponseController extends Controller
 
     public function store(Request $request, $survey_id)
     {
-        // Encuesta con preguntas y mapping (evento)
         $survey = Survey::with(['questions', 'mapping'])->findOrFail($survey_id);
 
-        // ✅ Validar que el usuario autenticado pueda responder según el evento
         if ($resp = $this->ensureCanAnswerSurvey($request, $survey)) {
             return $resp;
         }
@@ -73,24 +74,28 @@ class ResponseController extends Controller
         $user = $request->user();
 
         $request->validate([
-            // ❌ Ya no aceptamos user_id desde el body
+            'rateable_id' => 'required|integer|exists:groups,id',
             'answers' => 'required|array|min:1',
             'answers.*.question_id' => 'required|integer|exists:survey_questions,id',
             'answers.*.score' => 'required|integer|min:1|max:5',
         ]);
 
+        $group = Group::where('id', $request->rateable_id)
+            ->where('status', GroupStatus::Completed)
+            ->firstOrFail();
+
+        $rateableType = $survey->mapping?->event;
+
         DB::beginTransaction();
         try {
-            // Guardar la respuesta principal
             $response = Response::create([
-                'survey_id'    => $survey->id,
-                'user_id'      => $user->id,          // ✅ Siempre el usuario autenticado
-                'rateable_type'=> Question::class,
-                'rateable_id'  => $request->answers[0]['question_id'] ?? null,
-                'date' => now(),
+                'survey_id'     => $survey->id,
+                'user_id'       => $user->id,
+                'rateable_id'   => $request->rateable_id,
+                'rateable_type' => $rateableType,
+                'date'  => now(),
             ]);
 
-            // Guardar los detalles de cada respuesta
             foreach ($request->answers as $answer) {
                 ResponseDetail::create([
                     'survey_response_id' => $response->id,

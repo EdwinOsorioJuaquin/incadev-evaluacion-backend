@@ -212,11 +212,14 @@ class SurveyController extends Controller
         }
 
         $request->validate([
-            'event' => 'required|string|in:satisfaction,teacher,impact',
+            'event'    => 'required|string|in:satisfaction,teacher,impact',
+            'group_id' => 'required|integer|exists:groups,id',
         ]);
 
-        $event = $request->input('event');
+        $event   = $request->input('event');
+        $groupId = $request->input('group_id');
 
+        // Roles permitidos según el tipo de encuesta
         $allowedRoles = match ($event) {
             'impact'       => ['student'],
             'satisfaction' => ['student'],
@@ -224,15 +227,16 @@ class SurveyController extends Controller
             default        => [],
         };
 
-        if (!$user->hasAnyRole($allowedRoles)) {
+        if (empty($allowedRoles) || !$user->hasAnyRole($allowedRoles)) {
             return response()->json([
                 'success' => false,
                 'message' => 'No tienes permisos para este tipo de encuesta.',
             ], 403);
         }
 
-        // ¿Ha respondido alguna survey de este evento?
+        // ¿Ha respondido alguna survey de este evento para ESTE grupo?
         $hasResponded = Response::where('user_id', $user->id)
+            ->where('rateable_id', $groupId)
             ->whereHas('survey.mapping', function ($q) use ($event) {
                 $q->where('event', $event);
             })
@@ -242,6 +246,7 @@ class SurveyController extends Controller
             'success' => true,
             'data' => [
                 'event'        => $event,
+                'group_id'     => $groupId,
                 'hasResponded' => $hasResponded,
             ],
         ]);
@@ -259,6 +264,48 @@ class SurveyController extends Controller
         return response()->json([
             'success' => true,
             'data' => $surveys
+        ]);
+    }
+
+    public function byRole(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+            ], 401);
+        }
+
+        $allowedEvents = [];
+
+        if ($user->hasRole('student')) {
+            $allowedEvents = array_merge($allowedEvents, ['impact', 'satisfaction']);
+        }
+
+        if ($user->hasRole('teacher')) {
+            $allowedEvents[] = 'teacher';
+        }
+
+        $allowedEvents = array_unique($allowedEvents);
+
+        if (empty($allowedEvents)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para ver encuestas.',
+            ], 403);
+        }
+
+        $surveys = Survey::with(['questions', 'mapping'])
+            ->whereHas('mapping', function ($q) use ($allowedEvents) {
+                $q->whereIn('event', $allowedEvents);
+            })
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $surveys,
         ]);
     }
 

@@ -5,10 +5,11 @@ namespace App\Http\Controllers\Evaluacion\Satisfaccion;
 
 use Illuminate\Http\Request;
 use App\Models\Evaluacion\Satisfaccion\Survey;
-use App\Models\Evaluacion\Satisfaccion\Question;
 use App\Models\Evaluacion\Satisfaccion\Response;
-use App\Models\Evaluacion\Satisfaccion\ResponseDetail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
+use IncadevUns\CoreDomain\Models\Group;
+use IncadevUns\CoreDomain\Enums\GroupStatus;
 
 class SurveyController extends Controller
 {
@@ -30,7 +31,7 @@ class SurveyController extends Controller
             ], 403);
         }
 
-        return null; // Todo ok
+        return null;
     }
 
     public function index(Request $request)
@@ -41,7 +42,7 @@ class SurveyController extends Controller
 
         $perPage = (int) $request->get('per_page', 10);
 
-        $surveys = Survey::with('questions')
+        $surveys = Survey::with(['questions', 'mapping'])
             ->latest()
             ->paginate($perPage);
 
@@ -74,6 +75,8 @@ class SurveyController extends Controller
         $request->validate([
             'title' => 'required|string',
             'description' => 'nullable|string',
+            'event' => 'required|string|in:satisfaction,teacher,impact',
+            'mapping_description' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -84,11 +87,16 @@ class SurveyController extends Controller
                 'description' => $request->description,
             ]);
 
+            $survey->mapping()->create([
+                'event' => $request->event,
+                'description' => $request->mapping_description,
+            ]);
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $survey->load('questions'),
+                'data' => $survey->load(['questions', 'mapping']),
             ], 201);
 
         } catch (\Throwable $th) {
@@ -108,7 +116,7 @@ class SurveyController extends Controller
             return $resp;
         }
 
-        $survey = Survey::with('questions')->findOrFail($id);
+        $survey = Survey::with(['questions', 'mapping'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -127,6 +135,8 @@ class SurveyController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'event' => 'required|string|in:satisfaction,teacher,impact',
+            'mapping_description' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -136,12 +146,20 @@ class SurveyController extends Controller
                 'description' => $request->description,
             ]);
 
+            $survey->mapping()->updateOrCreate(
+                [],
+                [
+                    'event' => $request->event,
+                    'description' => $request->mapping_description,
+                ]
+            );
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Encuesta actualizada correctamente.',
-                'data' => $survey->load('questions')
+                'data' => $survey->load(['questions', 'mapping'])
             ]);
 
         } catch (\Throwable $th) {
@@ -171,6 +189,10 @@ class SurveyController extends Controller
 
             $survey->responses()->delete();
             $survey->questions()->delete();
+            if ($survey->mapping) {
+                $survey->mapping()->delete();
+            }
+
             $survey->delete();
         });
 
@@ -182,17 +204,124 @@ class SurveyController extends Controller
 
     public function active(Request $request)
     {
-        if ($resp = $this->ensureSurveyAdmin($request)) {
-            return $resp;
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+            ], 401);
         }
 
-        $surveys = Survey::where('is_active', true)
-            ->withCount('responses')
-            ->get(['id', 'title', 'description', 'created_at']);
+        $request->validate([
+            'event'     => 'required|string|in:satisfaction,teacher,impact',
+            'group_id'  => 'required|integer|exists:groups,id',
+            'survey_id' => 'required|integer|exists:surveys,id',
+        ]);
+
+        $event    = $request->input('event');
+        $groupId  = $request->input('group_id');
+        $surveyId = $request->input('survey_id');
+
+        // Roles permitidos según el tipo de encuesta
+        $allowedRoles = match ($event) {
+            'impact'       => ['student'],
+            'satisfaction' => ['student'],
+            'teacher'      => ['teacher'],
+            default        => [],
+        };
+
+        if (empty($allowedRoles) || !$user->hasAnyRole($allowedRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para este tipo de encuesta.',
+            ], 403);
+        }
+
+        // Traer el grupo
+        $group = Group::findOrFail($groupId);
+
+        // Para impact: validar si ya pasó el tiempo mínimo
+        $canAnswerByTime = true;
+        if ($event === 'impact') {
+            $canAnswerByTime = $this->isPastTime($group);
+        }
+
+        // ¿Ha respondido ESTA survey (survey_id) de ESTE evento para ESTE grupo?
+        $hasResponded = Response::where('user_id', $user->id)
+            ->where('rateable_id', $groupId)
+            ->where('survey_id', $surveyId)
+            ->whereHas('survey.mapping', function ($q) use ($event) {
+                $q->where('event', $event);
+            })
+            ->exists();
 
         return response()->json([
             'success' => true,
-            'data' => $surveys
+            'data' => [
+                'event'         => $event,
+                'group_id'      => $groupId,
+                'survey_id'     => $surveyId,
+                'hasResponded'  => $hasResponded,
+                'canAnswerTime' => $canAnswerByTime,
+            ],
+        ]);
+    }
+
+    private function isPastTime(Group $group): bool
+    {
+        if ($group->status !== GroupStatus::Completed) {
+            return false;
+        }
+
+        if (!$group->end_date) {
+            return false;
+        }
+
+        $limitDate = Carbon::parse($group->end_date)->addMonths(2);
+
+        return now()->greaterThanOrEqualTo($limitDate);
+    }
+
+    public function byRole(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+            ], 401);
+        }
+
+        $allowedEvents = [];
+
+        if ($user->hasRole('student')) {
+            $allowedEvents = array_merge($allowedEvents, ['impact', 'satisfaction', 'teacher']);
+        }
+
+        if ($user->hasRole('teacher')) {
+            $allowedEvents[] = 'teacher';
+        }
+
+        $allowedEvents = array_unique($allowedEvents);
+
+        if (empty($allowedEvents)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para ver encuestas.',
+            ], 403);
+        }
+
+        $surveys = Survey::with(['questions', 'mapping'])
+            ->whereHas('mapping', function ($q) use ($allowedEvents) {
+                $q->whereIn('event', $allowedEvents);
+            })
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $surveys,
         ]);
     }
 

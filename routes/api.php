@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [SurveyController::class, 'index']);
         Route::post('/', [SurveyController::class, 'store']);
         Route::get('/active', [SurveyController::class, 'active']);
+        Route::get('/by-role', [SurveyController::class, 'byRole']);
         Route::get('/{id}', [SurveyController::class, 'show']);
         Route::put('/{id}', [SurveyController::class, 'update']);
         Route::delete('/{id}', [SurveyController::class, 'destroy']);
@@ -52,21 +53,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/questions/{id}', [QuestionController::class, 'show']);
     Route::put('/questions/{id}', [QuestionController::class, 'update']);
     Route::delete('/questions/{id}', [QuestionController::class, 'destroy']);
+
+    // Respuestas a la encuesta
+    Route::post('/surveys/{survey}/responses', [ResponseController::class, 'store']);
 });
 // SATISFACCION
 // 🔹 Ruta de prueba para verificar API
 Route::get('/test', function () {
     return response()->json(['message' => '✅ API funcionando correctamente']);
 });
-
-// 🧠 CRUD de encuestas
-
-
-//  Obtener encuesta con preguntas (para el frontend)
-//Route::get('/surveys/{id}/questions', [ResponseController::class, 'show']);
-
-//  Enviar respuestas de encuesta
-Route::post('/surveys/{survey_id}/responses', [ResponseController::class, 'store']);
 
 //  Contar respuestas por encuesta (dashboard)
 Route::get('/responses/count', function() {
@@ -79,11 +74,6 @@ Route::get('/responses/count', function() {
         ])
     ]);
 });
-
-//  Consultar todas las respuestas (opcional)
-Route::get('/responses', [ResponseController::class, 'index']);
-// Route::get('/responses/{id}', [ResponseController::class, 'showResponse']);
-
 
 //  Reportes / estadísticas
 Route::get('/reports', [ReportController::class, 'index']);

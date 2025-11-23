@@ -202,13 +202,59 @@ class SurveyController extends Controller
 
     public function active(Request $request)
     {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autenticado.',
+            ], 401);
+        }
+
+        $request->validate([
+            'event' => 'required|string|in:satisfaction,teacher,impact',
+        ]);
+
+        $event = $request->input('event');
+
+        $allowedRoles = match ($event) {
+            'impact'       => ['student'],
+            'satisfaction' => ['student'],
+            'teacher'      => ['teacher'],
+            default        => [],
+        };
+
+        if (!$user->hasAnyRole($allowedRoles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No tienes permisos para este tipo de encuesta.',
+            ], 403);
+        }
+
+        // ¿Ha respondido alguna survey de este evento?
+        $hasResponded = Response::where('user_id', $user->id)
+            ->whereHas('survey.mapping', function ($q) use ($event) {
+                $q->where('event', $event);
+            })
+            ->exists();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'event'        => $event,
+                'hasResponded' => $hasResponded,
+            ],
+        ]);
+    }
+
+    public function isPastTime(Request $request)
+    {
         if ($resp = $this->ensureSurveyAdmin($request)) {
             return $resp;
         }
 
-        $surveys = Survey::where('is_active', true)
-            ->withCount('responses')
-            ->get(['id', 'title', 'description', 'created_at']);
+        $surveys = Survey::get(['updated_at']);
+        $time = "";
 
         return response()->json([
             'success' => true,

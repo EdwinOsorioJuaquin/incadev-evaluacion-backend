@@ -16,7 +16,7 @@ class Response extends Model
         'user_id',
         'rateable_id',
         'rateable_type',
-        'responded_at',
+        'date',
     ];
 
     public function survey()

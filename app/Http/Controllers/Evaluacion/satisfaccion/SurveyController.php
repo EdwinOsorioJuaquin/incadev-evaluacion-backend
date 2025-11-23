@@ -8,6 +8,9 @@ use App\Models\Evaluacion\Satisfaccion\Survey;
 use App\Models\Evaluacion\Satisfaccion\Response;
 use Illuminate\Support\Facades\DB;
 use App\Models\Evaluacion\Satisfaccion\SurveyMapping;
+use Illuminate\Support\Carbon;
+use IncadevUns\CoreDomain\Models\Group;
+use IncadevUns\CoreDomain\Enums\GroupStatus;
 
 class SurveyController extends Controller
 {
@@ -236,6 +239,15 @@ class SurveyController extends Controller
             ], 403);
         }
 
+        // Traer el grupo
+        $group = Group::findOrFail($groupId);
+
+        // Para impact: validar si ya pasó el tiempo mínimo
+        $canAnswerByTime = true;
+        if ($event === 'impact') {
+            $canAnswerByTime = $this->isPastTime($group);
+        }
+
         // ¿Ha respondido ESTA survey (survey_id) de ESTE evento para ESTE grupo?
         $hasResponded = Response::where('user_id', $user->id)
             ->where('rateable_id', $groupId)
@@ -248,27 +260,28 @@ class SurveyController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'event'        => $event,
-                'group_id'     => $groupId,
-                'survey_id'    => $surveyId,
-                'hasResponded' => $hasResponded,
+                'event'         => $event,
+                'group_id'      => $groupId,
+                'survey_id'     => $surveyId,
+                'hasResponded'  => $hasResponded,
+                'canAnswerTime' => $canAnswerByTime,
             ],
         ]);
     }
 
-    public function isPastTime(Request $request)
+    private function isPastTime(Group $group): bool
     {
-        if ($resp = $this->ensureSurveyAdmin($request)) {
-            return $resp;
+        if ($group->status !== GroupStatus::Completed) {
+            return false;
         }
 
-        $surveys = Survey::get(['updated_at']);
-        $time = "";
+        if (!$group->end_date) {
+            return false;
+        }
 
-        return response()->json([
-            'success' => true,
-            'data' => $surveys
-        ]);
+        $limitDate = Carbon::parse($group->end_date)->addMonths(2);
+
+        return now()->greaterThanOrEqualTo($limitDate);
     }
 
     public function byRole(Request $request)

@@ -6,15 +6,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;                 // <-- 1. Import Laravel Sanctum
-use Spatie\Permission\Traits\HasRoles;            // <-- 2. Import Spatie Permission
-use IncadevUns\CoreDomain\Traits\HasIncadevCore;  // <-- 3. Import Incadev Core
-
+use IncadevUns\CoreDomain\Traits\HasIncadevCore;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasApiTokens, HasRoles, HasIncadevCore;
+    use HasFactory, Notifiable,
+        HasRoles, HasApiTokens, HasIncadevCore;
 
     /**
      * The attributes that are mass assignable.
@@ -25,11 +25,10 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-
         'dni',
-    'fullname',
-    'avatar',
-    'phone',
+        'fullname',
+        'avatar',
+        'phone',
     ];
 
     /**

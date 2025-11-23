@@ -35,6 +35,23 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/audits/{id}/report/generate', [ReportAuditController::class, 'generate']);
     Route::get('/audits/{id}/report/preview', [ReportAuditController::class, 'preview']);
     Route::get('/audits/{id}/report/download', [ReportAuditController::class, 'download']);
+
+    // Encuestas
+    Route::prefix('surveys')->group(function () {
+        Route::get('/', [SurveyController::class, 'index']);
+        Route::post('/', [SurveyController::class, 'store']);
+        Route::get('/active', [SurveyController::class, 'active']);
+        Route::get('/{id}', [SurveyController::class, 'show']);
+        Route::put('/{id}', [SurveyController::class, 'update']);
+        Route::delete('/{id}', [SurveyController::class, 'destroy']);
+    });
+
+    Route::get('/surveys/{survey}/questions', [QuestionController::class, 'index']);
+    Route::post('/surveys/{survey}/questions', [QuestionController::class, 'store']);
+
+    Route::get('/questions/{id}', [QuestionController::class, 'show']);
+    Route::put('/questions/{id}', [QuestionController::class, 'update']);
+    Route::delete('/questions/{id}', [QuestionController::class, 'destroy']);
 });
 // SATISFACCION
 // 🔹 Ruta de prueba para verificar API
@@ -43,12 +60,7 @@ Route::get('/test', function () {
 });
 
 // 🧠 CRUD de encuestas
-Route::get('/surveys', [SurveyController::class, 'index']);
-Route::get('/surveys/{id}', [SurveyController::class, 'show']);
-Route::post('/surveys', [SurveyController::class, 'store']);
-Route::put('/surveys/{id}', [SurveyController::class, 'update']);
-Route::delete('/surveys/{id}', [SurveyController::class, 'destroy']);
-Route::get('/student/surveys', [SurveyController::class, 'active']);
+
 
 //  Obtener encuesta con preguntas (para el frontend)
 //Route::get('/surveys/{id}/questions', [ResponseController::class, 'show']);
@@ -79,13 +91,5 @@ Route::get('/reports/survey/{id}', [ReportController::class, 'generate']);
 Route::get('/reports/survey/{id}/pdf', [ReportController::class, 'downloadPdf']);
 Route::get('/reports/survey/{id}/excel', [ReportController::class, 'downloadExcel']);
 Route::get('/surveys/{id}/analysis', [SurveyController::class, 'analysis']);
-
-// 🧩 Preguntas (QuestionController)
-Route::get('/surveys/{surveyId}/questions', [QuestionController::class, 'index'])
-    ->name('api.surveys.questions.index');
-Route::post('/surveys/{surveyId}/questions', [QuestionController::class, 'storeQuestions'])
-    ->name('api.surveys.questions.store');
-Route::delete('/questions/{id}', [QuestionController::class, 'destroy'])
-    ->name('api.questions.destroy');
 
 

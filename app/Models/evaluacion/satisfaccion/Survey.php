@@ -17,4 +17,9 @@ class Survey extends Model
     {
         return $this->hasMany(Response::class, 'survey_id');
     }
+
+    public function mapping()
+    {
+        return $this->hasOne(SurveyMapping::class);
+    }
 }

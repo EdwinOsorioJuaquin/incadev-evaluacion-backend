@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Evaluacion\Satisfaccion;
 
 use Illuminate\Http\Request;
 use App\Models\Evaluacion\Satisfaccion\Survey;
-use App\Models\Evaluacion\Satisfaccion\Question;
 use App\Models\Evaluacion\Satisfaccion\Response;
-use App\Models\Evaluacion\Satisfaccion\ResponseDetail;
 use Illuminate\Support\Facades\DB;
+use App\Models\Evaluacion\Satisfaccion\SurveyMapping;
 
 class SurveyController extends Controller
 {
@@ -30,7 +29,7 @@ class SurveyController extends Controller
             ], 403);
         }
 
-        return null; // Todo ok
+        return null;
     }
 
     public function index(Request $request)
@@ -41,7 +40,7 @@ class SurveyController extends Controller
 
         $perPage = (int) $request->get('per_page', 10);
 
-        $surveys = Survey::with('questions')
+        $surveys = Survey::with(['questions', 'mapping'])
             ->latest()
             ->paginate($perPage);
 
@@ -74,6 +73,8 @@ class SurveyController extends Controller
         $request->validate([
             'title' => 'required|string',
             'description' => 'nullable|string',
+            'event' => 'required|string|in:satisfaction,teacher,impact',
+            'mapping_description' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -84,11 +85,16 @@ class SurveyController extends Controller
                 'description' => $request->description,
             ]);
 
+            $survey->mapping()->create([
+                'event' => $request->event,
+                'description' => $request->mapping_description,
+            ]);
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $survey->load('questions'),
+                'data' => $survey->load(['questions', 'mapping']),
             ], 201);
 
         } catch (\Throwable $th) {
@@ -108,7 +114,7 @@ class SurveyController extends Controller
             return $resp;
         }
 
-        $survey = Survey::with('questions')->findOrFail($id);
+        $survey = Survey::with(['questions', 'mapping'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -127,6 +133,8 @@ class SurveyController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'event' => 'required|string|in:satisfaction,teacher,impact',
+            'mapping_description' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -136,12 +144,20 @@ class SurveyController extends Controller
                 'description' => $request->description,
             ]);
 
+            $survey->mapping()->updateOrCreate(
+                [],
+                [
+                    'event' => $request->event,
+                    'description' => $request->mapping_description,
+                ]
+            );
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Encuesta actualizada correctamente.',
-                'data' => $survey->load('questions')
+                'data' => $survey->load(['questions', 'mapping'])
             ]);
 
         } catch (\Throwable $th) {
@@ -171,6 +187,10 @@ class SurveyController extends Controller
 
             $survey->responses()->delete();
             $survey->questions()->delete();
+            if ($survey->mapping) {
+                $survey->mapping()->delete();
+            }
+
             $survey->delete();
         });
 

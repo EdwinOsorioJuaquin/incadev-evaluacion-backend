@@ -70,28 +70,53 @@ class AuditController extends Controller
      * )
      */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'audit_date' => 'required|date',
-            'summary' => 'required|string|min:5',
-            'auditable_type' => 'required|string',
-            'auditable_id' => 'required|integer',
-        ]);
+{
+    $validated = $request->validate([
+        'audit_date' => 'required|date',
+        'summary' => 'required|string|min:5',
+        'auditable_type' => 'required|string',
+        'auditable_id' => 'required|integer',
+    ]);
 
-        $audit = Audit::create([
-            'auditor_id' => Auth::id(),
-            'audit_date' => $validated['audit_date'],
-            'summary' => $validated['summary'],
-            'auditable_type' => $validated['auditable_type'],
-            'auditable_id' => $validated['auditable_id'],
-            'status' => 'pending',
-        ]);
+    // Namespace base
+    $baseNamespace = "IncadevUns\\CoreDomain\\Models\\";
 
-        return response()->json([
-            'message' => 'Auditoría creada correctamente.',
-            'data' => $audit
-        ], 201);
+    // --- 1) Normalizar: quitar escapes dobles que vengan del frontend ---
+    $incomingType = str_replace('\\\\', '\\', $validated['auditable_type']);
+    $incomingType = str_replace('\\\\\\\\', '\\', $incomingType); // mecanismo extra por si acaso
+
+    // --- 2) Construir correcto tipo de modelo ---
+    if (str_starts_with($incomingType, $baseNamespace)) {
+        // Ya viene con namespace completo → usar tal cual
+        $auditableType = $incomingType;
+    } else {
+        // Viene solo "Hardware", "Software" → construir namespace
+        $auditableType = $baseNamespace . $incomingType;
     }
+
+    // --- 3) Validar existencia real de la clase ---
+    if (!class_exists($auditableType)) {
+        return response()->json([
+            'message' => "El modelo auditable '{$auditableType}' no existe."
+        ], 422);
+    }
+
+    // --- 4) Crear auditoría ---
+    $audit = Audit::create([
+        'auditor_id'     => Auth::id(),
+        'audit_date'     => $validated['audit_date'],
+        'summary'        => $validated['summary'],
+        'auditable_type' => $auditableType,  // Ya corregido y normalizado
+        'auditable_id'   => $validated['auditable_id'],
+        'status'         => 'pending',
+    ]);
+
+    return response()->json([
+        'message' => 'Auditoría creada correctamente.',
+        'data' => $audit
+    ], 201);
+}
+
 
     /**
      * @OA\Get(

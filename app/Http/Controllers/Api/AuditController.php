@@ -36,9 +36,12 @@ class AuditController extends Controller
      */
     public function index()
     {
-        $audits = Audit::where('auditor_id', Auth::id())
-            ->orderByDesc('audit_date')
-            ->get();
+        $audits = Audit::withCount('findings') // 👈 esto añade findings_count
+        ->where('auditor_id', Auth::id())  // 👈 filtrar por auditor asignado
+        ->orderByDesc('audit_date')
+        ->paginate(10); // 👈 importante para tu frontend
+
+        
 
         return response()->json($audits);
     }
@@ -285,31 +288,92 @@ public function startAudit($id)
         }
 
         return response()->json([
-            "audits" => [
-                "total"        => Audit::count(),
-                "pending"      => Audit::where('status', AuditStatus::Pending->value)->count(),
-                "in_progress"  => Audit::where('status', AuditStatus::InProgress->value)->count(),
-                "completed"    => Audit::where('status', AuditStatus::Completed->value)->count(),
-                "cancelled"    => Audit::where('status', AuditStatus::Cancelled->value)->count(),
-            ],
+            "success" => true,
+            "message" => "Dashboard de auditorías obtenido correctamente.",
+            "data" => [
+                "audits" => [
+                    "total"        => Audit::count(),
+                    "pending"      => Audit::where('status', AuditStatus::Pending->value)->count(),
+                    "in_progress"  => Audit::where('status', AuditStatus::InProgress->value)->count(),
+                    "completed"    => Audit::where('status', AuditStatus::Completed->value)->count(),
+                    "cancelled"    => Audit::where('status', AuditStatus::Cancelled->value)->count(),
+                ],
 
-            "findings" => [
-                "total"        => AuditFinding::count(),
-                "open"         => AuditFinding::where('status', AuditFindingStatus::Open->value)->count(),
-                "in_progress"  => AuditFinding::where('status', AuditFindingStatus::InProgress->value)->count(),
-                "resolved"     => AuditFinding::where('status', AuditFindingStatus::Resolved->value)->count(),
-                "wont_fix"     => AuditFinding::where('status', AuditFindingStatus::WontFix->value)->count(),
-            ],
+                "findings" => [
+                    "total"        => AuditFinding::count(),
+                    "open"         => AuditFinding::where('status', AuditFindingStatus::Open->value)->count(),
+                    "in_progress"  => AuditFinding::where('status', AuditFindingStatus::InProgress->value)->count(),
+                    "resolved"     => AuditFinding::where('status', AuditFindingStatus::Resolved->value)->count(),
+                    "wont_fix"     => AuditFinding::where('status', AuditFindingStatus::WontFix->value)->count(),
+                ],
 
-            "actions" => [
-                "total"        => AuditAction::count(),
-                "pending"      => AuditAction::where('status', AuditActionStatus::Pending->value)->count(),
-                "in_progress"  => AuditAction::where('status', AuditActionStatus::InProgress->value)->count(),
-                "completed"    => AuditAction::where('status', AuditActionStatus::Completed->value)->count(),
-                "cancelled"    => AuditAction::where('status', AuditActionStatus::Cancelled->value)->count(),
-            ],
-            "audits_over_time" => $auditsByMonth,
+                "actions" => [
+                    "total"        => AuditAction::count(),
+                    "pending"      => AuditAction::where('status', AuditActionStatus::Pending->value)->count(),
+                    "in_progress"  => AuditAction::where('status', AuditActionStatus::InProgress->value)->count(),
+                    "completed"    => AuditAction::where('status', AuditActionStatus::Completed->value)->count(),
+                    "cancelled"    => AuditAction::where('status', AuditActionStatus::Cancelled->value)->count(),
+                ],
+                "audits_over_time" => $auditsByMonth,
+            ]
         ]);
+    }
+
+
+
+    public function getAuditUsers()
+    {
+        $users = User::whereIn('role', ['auditor', 'audit_manager'])
+                    ->where('is_active', true)
+                    ->select('id', 'name', 'email', 'role')
+                    ->orderBy('name')
+                    ->get();
+
+        return response()->json($users);
+    }
+
+    public function getAuditables($type)
+    {
+        $validTypes = [
+            'system' => 'App\\Models\\System',
+            'process' => 'App\\Models\\Process', 
+            'department' => 'App\\Models\\Department',
+        ];
+
+        if (!array_key_exists($type, $validTypes)) {
+            return response()->json(['message' => 'Tipo no válido'], 400);
+        }
+
+        $modelClass = $validTypes[$type];
+        $auditables = $modelClass::select('id', 'name', 'code')
+                                ->where('is_active', true)
+                                ->orderBy('name')
+                                ->get();
+
+        return response()->json($auditables);
+    }
+
+
+    public function updateStatus($id, $status)
+    {
+        $audit = Audit::findOrFail($id);
+        $audit->status = $status;
+        $audit->save();
+
+        return response()->json([
+            'message' => 'Estado de auditoría actualizado correctamente.',
+            'audit' => $audit
+        ]);
+    }
+    
+    public function getMyAudits()
+    {
+        $user = Auth::user();
+        $audits = Audit::where('auditor_id', $user->id)
+                        ->orderByDesc('audit_date')
+                        ->get();
+
+        return response()->json($audits);
     }
 
 }

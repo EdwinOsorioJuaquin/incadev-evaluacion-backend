@@ -14,11 +14,15 @@ use App\Http\Controllers\Api\{
 
 Route::middleware('auth:sanctum')->group(function () {
     // Auditorías
+    Route::get('/audits/dashboard', [AuditController::class, 'dashboard']);
     Route::get('/audits', [AuditController::class, 'index']);
     Route::post('/audits', [AuditController::class, 'store']);
     Route::get('/audits/{id}', [AuditController::class, 'show']);
     Route::put('/audits/{id}/recommendation', [AuditController::class, 'updateRecommendation']);
-    Route::get('/audits/dashboard', [AuditController::class, 'dashboard']);
+    Route::get('/audits/my-audits', [AuditController::class, 'getMyAudits']);
+    Route::put('/audits/{id}/status', [AuditController::class, 'updateStatus']);
+
+    
     Route::put('/audits/{id}', [AuditController::class, 'update']);
     Route::put('/audits/{id}/start', [AuditController::class, 'startAudit']);
     // Hallazgos

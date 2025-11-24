@@ -1,9 +1,9 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Evaluacion\Satisfaccion\SurveyController;
-use App\Http\Controllers\Evaluacion\Satisfaccion\ResponseController;
-use App\Http\Controllers\Evaluacion\Satisfaccion\ReportController;
-use App\Http\Controllers\Evaluacion\Satisfaccion\QuestionController;
+use App\Http\Controllers\Evaluacion\satisfaccion\SurveyController;
+use App\Http\Controllers\Evaluacion\satisfaccion\ResponseController;
+use App\Http\Controllers\Evaluacion\satisfaccion\ReportController;
+use App\Http\Controllers\Evaluacion\satisfaccion\QuestionController;
 use App\Http\Controllers\Api\{
     AuditController,
     AuditFindingController,

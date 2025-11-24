@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use IncadevUns\CoreDomain\Models\Audit;
+use IncadevUns\CoreDomain\Models\FindingEvidence;
+use IncadevUns\CoreDomain\Models\User;
 use IncadevUns\CoreDomain\Models\AuditFinding;
 use IncadevUns\CoreDomain\Models\AuditAction;
 use IncadevUns\CoreDomain\Enums\AuditStatus;
@@ -79,35 +81,35 @@ class AuditController extends Controller
         'auditable_id' => 'required|integer',
     ]);
 
-    // Namespace base
     $baseNamespace = "IncadevUns\\CoreDomain\\Models\\";
 
-    // --- 1) Normalizar: quitar escapes dobles que vengan del frontend ---
-    $incomingType = str_replace('\\\\', '\\', $validated['auditable_type']);
-    $incomingType = str_replace('\\\\\\\\', '\\', $incomingType); // mecanismo extra por si acaso
+    // --- Normalización robusta ---
+    $incomingType = $validated['auditable_type'];
+    $incomingType = str_replace(['\\\\', '\\\\\\\\'], '\\', $incomingType);
 
-    // --- 2) Construir correcto tipo de modelo ---
-    if (str_starts_with($incomingType, $baseNamespace)) {
-        // Ya viene con namespace completo → usar tal cual
-        $auditableType = $incomingType;
-    } else {
-        // Viene solo "Hardware", "Software" → construir namespace
+    // Log para diagnóstico
+    \Log::info("auditable_type recibido:", [$incomingType]);
+
+    // --- Reconstrucción del namespace ---
+    if (!str_starts_with($incomingType, $baseNamespace)) {
         $auditableType = $baseNamespace . $incomingType;
+    } else {
+        $auditableType = $incomingType;
     }
 
-    // --- 3) Validar existencia real de la clase ---
+    // --- Validación de clase existente ---
     if (!class_exists($auditableType)) {
         return response()->json([
             'message' => "El modelo auditable '{$auditableType}' no existe."
         ], 422);
     }
 
-    // --- 4) Crear auditoría ---
+    // --- Guardar auditoría ---
     $audit = Audit::create([
         'auditor_id'     => Auth::id(),
         'audit_date'     => $validated['audit_date'],
         'summary'        => $validated['summary'],
-        'auditable_type' => $auditableType,  // Ya corregido y normalizado
+        'auditable_type' => $auditableType,
         'auditable_id'   => $validated['auditable_id'],
         'status'         => 'pending',
     ]);
@@ -117,6 +119,7 @@ class AuditController extends Controller
         'data' => $audit
     ], 201);
 }
+
 
 
     /**

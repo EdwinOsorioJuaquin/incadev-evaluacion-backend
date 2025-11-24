@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use IncadevUns\CoreDomain\Models\Audit;
 use IncadevUns\CoreDomain\Models\AuditFinding;
 use IncadevUns\CoreDomain\Enums\AuditFindingStatus;
+use IncadevUns\CoreDomain\Models\User;
+use Illuminate\Http\JsonResponse;
 
 /**
  * @OA\Tag(
@@ -150,7 +152,6 @@ public function getAuditUsers(): JsonResponse
         return response()->json($users);
 
     } catch (\Exception $e) {
-        \Log::error('Error obteniendo usuarios: ' . $e->getMessage());
         return response()->json([
             'message' => 'Error al cargar los usuarios'
         ], 500);

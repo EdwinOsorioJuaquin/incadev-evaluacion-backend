@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\Evaluacion\Satisfaccion;
+namespace App\Http\Controllers\Evaluation;
 
 use Illuminate\Http\Request;
-use App\Models\Evaluacion\Satisfaccion\Survey;
-use App\Models\Evaluacion\Satisfaccion\Question;
+use App\Models\Evaluation\Survey;
+use App\Models\Evaluation\Question;
 use Illuminate\Support\Facades\DB;
 
 class QuestionController extends Controller

@@ -1,11 +1,11 @@
 <?php
 
 
-namespace App\Http\Controllers\Evaluacion\Satisfaccion;
+namespace App\Http\Controllers\Evaluation;
 
 use Illuminate\Http\Request;
-use App\Models\Evaluacion\Satisfaccion\Survey;
-use App\Models\Evaluacion\Satisfaccion\Response;
+use App\Models\Evaluation\Survey;
+use App\Models\Evaluation\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use IncadevUns\CoreDomain\Models\Group;

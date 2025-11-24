@@ -1,9 +1,9 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Evaluacion\Satisfaccion\SurveyController;
-use App\Http\Controllers\Evaluacion\Satisfaccion\ResponseController;
-use App\Http\Controllers\Evaluacion\Satisfaccion\ReportController;
-use App\Http\Controllers\Evaluacion\Satisfaccion\QuestionController;
+use App\Http\Controllers\Evaluation\SurveyController;
+use App\Http\Controllers\Evaluation\ResponseController;
+use App\Http\Controllers\Evaluation\ReportController;
+use App\Http\Controllers\Evaluation\QuestionController;
 use App\Http\Controllers\Api\{
     AuditController,
     AuditFindingController,
@@ -72,7 +72,7 @@ Route::get('/test', function () {
 
 //  Contar respuestas por encuesta (dashboard)
 Route::get('/responses/count', function() {
-    $surveys = \App\Models\Evaluacion\Satisfaccion\Survey::withCount('responses')->get();
+    $surveys = \App\Models\Evaluation\Survey::withCount('responses')->get();
     return response()->json([
         'data' => $surveys->map(fn($s) => [
             'id' => $s->id,

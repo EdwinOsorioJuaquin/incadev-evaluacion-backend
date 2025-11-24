@@ -13,6 +13,9 @@ use App\Http\Controllers\Api\{
 };
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Usuarios auditores
+    Route::get('/users/auditors', [AuditFindingController::class, 'getAuditUsers']);
+    
     // Auditorías
     Route::get('/audits/dashboard', [AuditController::class, 'dashboard']);
     Route::get('/audits', [AuditController::class, 'index']);
@@ -22,6 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/audits/my-audits', [AuditController::class, 'getMyAudits']);
     Route::put('/audits/{id}/status', [AuditController::class, 'updateStatus']);
 
+    Route::get('/auditable-types', [AuditController::class, 'getAuditableTypes']);
+    Route::get('/auditable-types/{type}/subtypes', [AuditController::class, 'getAuditableSubtypes']);
 
     Route::put('/audits/{id}', [AuditController::class, 'update']);
     Route::put('/audits/{id}/start', [AuditController::class, 'startAudit']);
@@ -36,11 +41,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Acciones correctivas
     Route::post('/findings/{id}/actions', [AuditActionController::class, 'store']);
     Route::put('/actions/{id}/status', [AuditActionController::class, 'updateStatus']);
-
-    // Reporte PDF
-    Route::post('/audits/{id}/report/generate', [ReportAuditController::class, 'generate']);
-    Route::get('/audits/{id}/report/preview', [ReportAuditController::class, 'preview']);
-    Route::get('/audits/{id}/report/download', [ReportAuditController::class, 'download']);
 
     // Encuestas
     Route::prefix('surveys')->group(function () {
@@ -89,4 +89,8 @@ Route::get('/reports/survey/{id}/pdf', [ReportController::class, 'downloadPdf'])
 Route::get('/reports/survey/{id}/excel', [ReportController::class, 'downloadExcel']);
 Route::get('/surveys/{id}/analysis', [SurveyController::class, 'analysis']);
 
+// Reporte PDF
+    Route::post('/audits/{id}/report/generate', [ReportAuditController::class, 'generate']);
+    Route::get('/audits/{id}/report/preview', [ReportAuditController::class, 'preview']);
+    Route::get('/audits/{id}/report/download', [ReportAuditController::class, 'download']);
 

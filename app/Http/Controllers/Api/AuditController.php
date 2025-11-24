@@ -231,26 +231,35 @@ class AuditController extends Controller
      */
 public function startAudit($id)
 {
+    \Log::info("=== INICIANDO AUDITORÍA ===");
+    \Log::info("Audit ID: " . $id);
+    \Log::info("Usuario autenticado: " . Auth::id());
+    
     $audit = Audit::findOrFail($id);
-
-    // Solo audiencias pending pueden iniciar
-    if ($audit->status !== 'pending') {
+    
+    // ✅ CORREGIDO: Usar ->value para obtener el string del Enum
+    \Log::info("Estado de auditoría desde DB: " . $audit->status->value);
+    \Log::info("Tipo de dato del status: " . gettype($audit->status->value));
+    
+    // ✅ CORREGIDO: Comparar con el value del Enum
+    if ($audit->status->value !== 'pending') {
+        \Log::warning("❌ NO se puede iniciar - Estado: " . $audit->status->value);
         return response()->json([
             'message' => 'La auditoría ya fue iniciada o completada.'
         ], 400);
     }
 
-    $audit->status = 'in_progress';
+    // ✅ CORREGIDO: Asignar el Enum correctamente
+    $audit->status = AuditStatus::InProgress;
     $audit->save();
+    
+    \Log::info("✅ Auditoría iniciada correctamente. Nuevo estado: " . $audit->status->value);
 
     return response()->json([
         'message' => 'Auditoría iniciada correctamente.',
         'data' => $audit
     ]);
 }
-
-
-    
 
     /**
      * @OA\Get(
@@ -374,6 +383,81 @@ public function startAudit($id)
                         ->get();
 
         return response()->json($audits);
+    }
+
+
+    /**
+     * Obtener tipos auditables disponibles
+     */
+    public function getAuditableTypes()
+    {
+        $auditableTypes = [
+            'Agreement' => 'Convenio',
+            'AdministrativeDocument' => 'Documento Administrativo',
+            'Availability' => 'Disponibilidad',
+            'Certificate' => 'Certificado',
+            'Contract' => 'Contrato',
+            'Enrollment' => 'Matrícula',
+            'EnrollmentPayment' => 'Pago de Matrícula',
+            'Exam' => 'Examen',
+            'Hardware' => 'Hardware',
+            'License' => 'Licencia',
+            'Software' => 'Software',
+            'StrategicPlan' => 'Plan Estratégico'
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $auditableTypes
+        ]);
+    }
+
+    /**
+     * Obtener subtipos específicos para cada tipo
+     */
+    public function getAuditableSubtypes($type)
+    {
+        $subtypes = [];
+
+        switch ($type) {
+            case 'Software':
+                $subtypes = [
+                    'academic_software' => 'Software Académico',
+                    'administrative_software' => 'Software Administrativo',
+                    'security_software' => 'Software de Seguridad',
+                    'database_software' => 'Software de Base de Datos'
+                ];
+                break;
+                
+            case 'Hardware':
+                $subtypes = [
+                    'servers' => 'Servidores',
+                    'computers' => 'Computadoras',
+                    'network_devices' => 'Dispositivos de Red',
+                    'storage_devices' => 'Dispositivos de Almacenamiento'
+                ];
+                break;
+                
+            case 'AdministrativeDocument':
+                $subtypes = [
+                    'resolutions' => 'Resoluciones',
+                    'directives' => 'Directivas',
+                    'reports' => 'Informes',
+                    'minutes' => 'Actas'
+                ];
+                break;
+                
+            // Agrega más casos según necesites
+            default:
+                $subtypes = [
+                    'general' => 'General'
+                ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $subtypes
+        ]);
     }
 
 }

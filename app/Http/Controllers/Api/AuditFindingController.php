@@ -131,4 +131,29 @@ class AuditFindingController extends Controller
             'status' => $finding->status->value,
         ]);
     }
+
+
+    // En AuditController.php - agregar este método
+public function getAuditUsers(): JsonResponse
+{
+    try {
+        // Obtener usuarios con roles de auditoría
+        $users = \IncadevUns\CoreDomain\Models\User::where(function($query) {
+                $query->where('role', 'auditor')
+                      ->orWhere('role', 'audit_manager');
+            })
+            ->where('is_active', true)
+            ->select('id', 'name', 'email', 'role')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json($users);
+
+    } catch (\Exception $e) {
+        \Log::error('Error obteniendo usuarios: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Error al cargar los usuarios'
+        ], 500);
+    }
+}
 }

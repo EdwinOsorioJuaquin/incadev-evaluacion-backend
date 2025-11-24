@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Evaluacion\Satisfaccion;
+namespace App\Http\Controllers\Evaluation;
 
 use Illuminate\Http\Request;
-use App\Models\Evaluacion\Satisfaccion\Survey;
-use App\Models\Evaluacion\Satisfaccion\Response;
-use App\Models\Evaluacion\Satisfaccion\ResponseDetail;
-use App\Models\Evaluacion\Satisfaccion\Question;
+use App\Models\Evaluation\Survey;
+use App\Models\Evaluation\Response;
+use App\Models\Evaluation\ResponseDetail;
+use App\Models\Evaluation\Question;
 use IncadevUns\CoreDomain\Models\Group;
 use IncadevUns\CoreDomain\Enums\GroupStatus;
 

@@ -1,5 +1,5 @@
 <?php
-namespace App\Models\Evaluacion\Satisfaccion;
+namespace App\Models\Evaluation;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

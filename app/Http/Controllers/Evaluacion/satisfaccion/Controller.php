@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Evaluacion\satisfaccion;
+namespace App\Http\Controllers\Evaluacion\Satisfaccion;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;

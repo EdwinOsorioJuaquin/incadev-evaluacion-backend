@@ -1,9 +1,9 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Evaluacion\satisfaccion\SurveyController;
-use App\Http\Controllers\Evaluacion\satisfaccion\ResponseController;
-use App\Http\Controllers\Evaluacion\satisfaccion\ReportController;
-use App\Http\Controllers\Evaluacion\satisfaccion\QuestionController;
+use App\Http\Controllers\Evaluacion\Satisfaccion\SurveyController;
+use App\Http\Controllers\Evaluacion\Satisfaccion\ResponseController;
+use App\Http\Controllers\Evaluacion\Satisfaccion\ReportController;
+use App\Http\Controllers\Evaluacion\Satisfaccion\QuestionController;
 use App\Http\Controllers\Api\{
     AuditController,
     AuditFindingController,
@@ -22,7 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/audits/my-audits', [AuditController::class, 'getMyAudits']);
     Route::put('/audits/{id}/status', [AuditController::class, 'updateStatus']);
 
-    
+
     Route::put('/audits/{id}', [AuditController::class, 'update']);
     Route::put('/audits/{id}/start', [AuditController::class, 'startAudit']);
     // Hallazgos
